@@ -1,0 +1,162 @@
+--=========================================================================
+-- SBU CSE 510: Bridge Properties
+--
+-- Your Name: Alireza Aghaei
+--
+--=========================================================================
+-- PROPERTIES OF TRAFFIC-LIGHT SYSTEM
+--=========================================================================
+-- This file is not a standalone NuSMV file: it is to be included in 
+-- bridge.smv or bridge-fixed.smv.
+
+-- Properties numbered to ease selecting with -n <property #>.
+
+-- NB: Numbers are not in strict sequence in this file as NuSMV
+-- numbers all CTL properties first.
+
+---------------------------------------------------------------------------
+-- Section 3.2, Q1: LTL Properties
+---------------------------------------------------------------------------
+
+-- There was a NuSMV issue with running -pre command in MacOS so I combined bridge-properties file 
+-- with bridge.smv and bridge-fixed.smv files.
+
+--2: (a)
+
+LTLSPEC G !(e_light = gn & w_light = gn);
+
+--3: (b)
+
+LTLSPEC G ((w_light = gn -> F w_light = rd) & (e_light = gn -> F e_light = rd));
+
+--4: (c)
+
+LTLSPEC G (tim.timeout & state = w1 -> X (X state = all_stop2) | X (state = all_stop2));
+
+--5: (d)
+
+LTLSPEC (G ( (on_bridge -> F !on_bridge) & ((at_e & e_light = rd) -> (e_light = gn) V at_e) & ((at_w & (w_light = rd)) -> ((at_w U w_light = gn) | G at_w)) ) ) -> (G (at_w -> F w_light = gn));
+
+--6: (e)
+
+LTLSPEC (G (on_bridge -> F !on_bridge) ) -> (G (at_w -> F w_light = gn));
+
+-- <INSERT YOUR DESCRIPTION OF COUNTER-EXAMPLE HERE>
+
+-- Counter example with NuSMV -pre cpp -bmc -bmc_length 10 -n 6 bridge.smv
+
+-- -> State: 1.1 <-
+--   state = all_stop1
+--   tim.time = 0
+--   at_w = FALSE
+--   at_e = TRUE
+--   on_bridge = FALSE
+--   e_light = rd
+--   w_light = rd
+--   tim.timeout = FALSE
+-- -- Loop starts here
+-- -> State: 1.2 <-
+--   state = e1
+--   at_e = FALSE
+--   on_bridge = TRUE
+--   e_light = gn
+-- -> State: 1.3 <-
+--   state = e2
+--   tim.time = 1
+--   at_w = TRUE
+--   on_bridge = FALSE
+-- -> State: 1.4 <-
+--   state = all_stop2
+--   tim.time = 2
+--   at_w = FALSE
+--   e_light = rd
+-- -> State: 1.5 <-
+--   state = all_stop1
+--   tim.time = 3
+--   at_e = TRUE
+--   tim.timeout = TRUE
+-- -> State: 1.6 <-
+--   state = e1
+--   tim.time = 0
+--   at_e = FALSE
+--   on_bridge = TRUE
+--   e_light = gn
+--   tim.timeout = FALSE
+
+-- Counter Example Description
+-- Because in our specification we do not have the second condition about cars behavior, it means that cars will not
+-- stay at light up to first step which the light turns green. So using this, in the counter example, there is a car,
+-- which in one state will appear at the west end. But it won't stay at light and leave there immediately after one step.
+-- Having this will make our LTL specification wrong because the car will be shown at the west end, but because it leaves
+-- the west end, the west light will never become green when we are in all_stop1 state.
+
+---------------------------------------------------------------------------
+-- Section 3.2, Q2: CTL Properties
+---------------------------------------------------------------------------
+
+--0: (a)
+
+CTLSPEC EF ( (w_light = gn & EF(e_light = gn)) | (e_light = gn & EF(w_light = gn)) );
+
+--1: (b)
+
+CTLSPEC AG ( (e_light = gn & on_bridge) -> EG(e_light = gn) );
+
+---------------------------------------------------------------------------
+-- Section 3.3, Q1: LTL Property showing bug
+---------------------------------------------------------------------------
+
+--7:
+
+LTLSPEC (G ( (on_bridge -> F !on_bridge) & ((at_e & e_light = rd) -> (e_light = gn) V at_e) & ((at_w & (w_light = rd)) -> ((at_w U w_light = gn) | G at_w)) ) ) -> (G (at_e -> F e_light = gn));
+ 
+---------------------------------------------------------------------------
+-- Section 3.3, Q2: Description of counter example behavior
+---------------------------------------------------------------------------
+
+-- Counter Example with NuSMV -pre cpp -bmc -bmc_length 10 -n 7 bridge.smv
+
+-- -> State: 1.1 <-
+--   state = all_stop1
+--   tim.time = 0
+--   at_w = TRUE
+--   at_e = FALSE
+--   on_bridge = FALSE
+--   e_light = rd
+--   w_light = rd
+--   tim.timeout = FALSE
+-- -- Loop starts here
+-- -> State: 1.2 <-
+--   state = w1
+--   at_w = FALSE
+--   at_e = TRUE
+--   on_bridge = TRUE
+--   w_light = gn
+-- -> State: 1.3 <-
+--   state = w2
+--   tim.time = 1
+--   on_bridge = FALSE
+-- -> State: 1.4 <-
+--   state = all_stop2
+--   tim.time = 2
+--   w_light = rd
+-- -> State: 1.5 <-
+--   state = all_stop1
+--   tim.time = 3
+--   at_w = TRUE
+--   tim.timeout = TRUE
+-- -> State: 1.6 <-
+--   state = w1
+--   tim.time = 0
+--   at_w = FALSE
+--   on_bridge = TRUE
+--   w_light = gn
+--   tim.timeout = FALSE
+
+-- <INSERT YOUR DESCRIPTION HERE>
+
+-- The bug is because of sequential execution of case statement on the next(state) in the main module.
+-- It always checks the at_w signal before the at_e signal, so this results in the counter example above in which, there
+-- is a car at the east end of the bridge and every time that we are in the all_stop1 state, there is a car also at the
+-- west end. Because at_w is always checked before at_e, so this scenrio will lead to have always east red light that
+-- makes our LTL specification wrong.

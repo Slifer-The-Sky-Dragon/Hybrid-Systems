@@ -1,0 +1,118 @@
+--=========================================================================
+-- SBU CSE 510: LTL Exercises
+--
+-- Instructions: modify the parts below according to the pdf. If you want
+-- to run NuSMV on a single spec use the command line flag: "-n i", which 
+-- will check only specification i (numbered from 0)
+--
+-- You need to replace the "LTLSPEC TRUE;" parts
+-- for satisfying paths, provide the list of states with a loop, for example: 
+-- "q3 -> q1 -> q2 -> q2 -> ..."
+--=========================================================================
+-- Student Name: Alireza Aghaei
+--=========================================================================
+-- Sec 2, Q1: LTL Exercise
+--=========================================================================
+
+----------------------------------------------------------------------------
+-- Model
+----------------------------------------------------------------------------
+
+-- <INSERT NuSMV MODEL HERE>
+
+MODULE main
+
+VAR
+    state: {1, 2, 3, 4};
+
+ASSIGN
+    init(state) := 3;
+    next(state) := case
+        state = 1 : {2};
+        state = 2 : {2};
+        state = 3 : {1, 2, 4};
+        state = 4 : {3};
+    esac;
+
+DEFINE
+    a := (state = 3) | (state = 4);
+    b := (state = 2) | (state = 4);
+
+----------------------------------------------------------------------------
+-- Identifying satisfying paths
+----------------------------------------------------------------------------
+
+-- <BRIEFLY EXPLAIN HOW YOU DO THIS AND WHY IT WORKS>
+
+-- To find satisfying paths, I will use the NuSMV to check \not phi. It will find a satisfying path for phi
+-- because if a path is a counter example for \not phi, it means that it is a satisfying path for phi. In the other
+-- words, a counter example for \not phi, is a path in model which phi becomes true. So it is a satisfying path for phi.
+
+----------------------------------------------------------------------------
+-- Part (a)
+----------------------------------------------------------------------------
+
+-- Query for checking validity
+LTLSPEC G a;
+
+-- Valid: No
+
+-- \not phi query: LTLSPEC G !a
+
+-- Example satisfying path
+
+-- 3 -> 1 -> 2 -> 2 -> ...
+
+----------------------------------------------------------------------------
+-- Part (b)
+----------------------------------------------------------------------------
+
+-- Query for checking validity
+LTLSPEC a U b;
+
+-- Valid: No
+
+-- \not phi query: LTLSPEC !(a U b)
+-- Example satisfying path
+
+-- 3 -> 2 -> 2 -> ...
+
+----------------------------------------------------------------------------
+-- Part (c)
+----------------------------------------------------------------------------
+
+-- Query for checking validity
+LTLSPEC a U X (a & !b);
+
+-- Valid: No
+
+-- \not phi query: LTLSPEC !(a U X (a & !b))
+-- Example satisfying path
+-- 3 -> 4 -> 3 -> 1 -> 2 -> 2 -> ...
+
+----------------------------------------------------------------------------
+-- Part (d)
+----------------------------------------------------------------------------
+
+-- Query for checking validity
+LTLSPEC X(!b) & G(!a | !b);
+
+-- Valid: No
+
+-- \not phi query: LTLSPEC !(X(!b) & G(!a | !b))
+-- Example satisfying path
+-- 3 -> 1 -> 2 -> 2 -> ...
+
+----------------------------------------------------------------------------
+-- Part (e)
+----------------------------------------------------------------------------
+
+-- Query for checking validity
+LTLSPEC X(a & b) & F(!a & !b);
+
+-- Valid: No
+
+-- \not phi query: LTLSPEC !(X(a & b) & F(!a & !b))
+-- Example satisfying path
+-- 3 -> 4 -> 3 -> 1 -> 2 -> 2 -> ...
+

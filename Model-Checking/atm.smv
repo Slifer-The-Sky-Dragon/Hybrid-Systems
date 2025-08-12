@@ -1,0 +1,31 @@
+-- ./NuSMV atm.smv
+
+MODULE main
+VAR
+    state: {welcome, enterPin, tryAgain, askAmount, thanksGoodbye, sorry};
+    action: {cardIn, correctPin, wrongPin, ack, cancel, fundsOK, problem, none};
+ASSIGN
+    init(state) := welcome;
+    next(state) := case
+        state = welcome & action = cardIn
+         : enterPin;
+        state = enterPin & action = correctPin 
+         : askAmount ;
+        state = enterPin & action = wrongPin
+         : tryAgain;
+        state = tryAgain & action = ack
+         : enterPin;
+        state = askAmount & action = fundsOK
+         : thanksGoodbye;
+        state = askAmount & action = problem
+         : sorry;
+        state = enterPin & action = cancel
+         : thanksGoodbye;
+        TRUE
+         : state;
+    esac;
+-- LTLSPEC F( G state = thanksGoodbye | G state = sorry);
+
+-- LTLSPEC ( F ( G !(state = askAmount)) -> F ( G state = thanksGoodbye | G state = sorry))
+
+LTLSPEC ( G (((state = welcome -> F action = cardIn) & (state = enterPin -> F (state = enterPin & (action = correctPin | action = cancel)))) & (state = askAmount -> F (action = fundsOK | action = problem))) -> F ( G state = thanksGoodbye | G state = sorry))

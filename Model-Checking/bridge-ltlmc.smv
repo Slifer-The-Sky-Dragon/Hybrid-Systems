@@ -1,0 +1,113 @@
+--=========================================================================
+-- SBU CSE 510: Bridge Problem LTL Model Checking
+--
+-- Your Name: Alireza Aghaei
+--
+--=========================================================================
+-- TRAFFIC LIGHT CONTROLLER FOR A ONE-LANE BRIDGE
+--=========================================================================
+
+--=========================================================================
+-- Composition of system with a Buchi Automaton for a property
+--=========================================================================
+
+
+MODULE main
+  VAR
+    sys  : system;
+    nfba : neg_fmla_ba(sys);
+---------------------------------------------------------------------------
+-- Section 3.4, Q1: 
+---------------------------------------------------------------------------
+-- Complete the required property phi here.
+
+  LTLSPEC G( (sys.w_light = gn) -> F (sys.w_light = rd) );
+
+
+---------------------------------------------------------------------------
+-- Section 3.4, Q1: 
+---------------------------------------------------------------------------
+-- Complete the module and property that emulates a Buchi Automaton for
+-- !phi.
+
+MODULE neg_fmla_ba(sys)
+  VAR
+    st : 0 .. 2;  -- <CHOOSE YOUR NUMBER OF STATES, AS APPROPRIATE>
+  ASSIGN
+    init(st) := 0;
+    next(st) := case
+      st = 0 & sys.w_light = gn : 1;
+      st = 1 & sys.w_light = rd : 2;
+      TRUE: st;
+    esac;
+
+  -- Add a property here that, if true, captures that there are *no*
+  -- accepting runs of the automaton.
+ 
+ LTLSPEC ! G (F (st = 1));
+
+
+
+--=========================================================================
+--Timer
+--=========================================================================
+
+MODULE timer(reset)
+  VAR 
+    time : 0 .. 3;
+  ASSIGN
+    init(time) := 0;
+    next(time) := 
+      case
+        reset : 0;
+        time = 3 : 3;
+        TRUE : time + 1;
+      esac;
+  DEFINE
+    timeout := time = 3;
+
+--=========================================================================
+-- System: Timer + Light Controller
+--=========================================================================
+
+MODULE system
+  VAR
+    -- State of controller
+    state : {all_stop1, all_stop2, w1, w2, e1, e2};
+    tim : timer(state = all_stop1);
+
+    -- Inputs to controller
+    at_w : boolean;
+    at_e : boolean;
+    on_bridge : boolean;
+
+    -- Outputs of controller
+    e_light : {rd, gn};
+    w_light : {rd, gn};
+
+  ASSIGN
+    w_light := (state = w1 | state = w2) ? gn : rd;
+    e_light := (state = e1 | state = e2) ? gn : rd;
+
+    init(state) := all_stop1;
+    next(state) :=
+      case 
+        state = all_stop1 & at_w : w1;
+        state = w1 & on_bridge : w2;
+        state = w1 & tim.timeout : all_stop2; 
+
+        state = w2 & (! on_bridge | tim.timeout) : all_stop2;
+
+        state = all_stop1 & at_e : e1;
+        state = e1 & on_bridge : e2;
+        state = e1 & tim.timeout : all_stop2; 
+
+        state = e2 & (! on_bridge | tim.timeout) : all_stop2;
+        
+        state = all_stop2 & !on_bridge : all_stop1;
+
+        TRUE : state;
+      esac;
+  
+
+

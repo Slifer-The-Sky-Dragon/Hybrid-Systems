@@ -1,0 +1,178 @@
+--=========================================================================
+-- SBU CSE 510: CTL Exercises
+--
+-- Instructions: modify the parts below according to the pdf. If you want
+-- to run NuSMV on a single spec use the command line flag: "-n i", which 
+-- will check only specification i (numbered from 0)
+
+--=========================================================================
+-- Student Name: Alireza Aghaei
+--=========================================================================
+-- Sec 2, Q2: CTL Exercise
+--=========================================================================
+
+----------------------------------------------------------------------------
+-- Module bringing together modules showing inequivalence
+----------------------------------------------------------------------------
+
+MODULE main
+VAR
+  a : model_a;
+  c : model_c;
+  e : model_e;
+  f : model_f;
+  h : model_h;
+  -- <ADD EXTRA STATE VARIABLES HERE, AS NECESSARY>
+
+----------------------------------------------------------------------------
+-- Part (a)
+----------------------------------------------------------------------------
+-- Formulas equivalent? No
+
+MODULE model_a
+-- <MODEL AND QUERIES SHOWING INEQUIVALENCE>
+VAR
+  state : {1, 2, 3};
+
+ASSIGN
+
+  init(state) := 1;
+  next(state) := case
+    (state = 1) : {2};
+    (state = 2) : {3};
+    (state = 3) : {3};
+  esac;
+
+DEFINE
+  a_y := (state = 2);
+
+CTLSPEC EF a_y;
+CTLSPEC EG a_y;
+
+----------------------------------------------------------------------------
+-- Part (b)
+----------------------------------------------------------------------------
+-- Formulas equivalent? Yes
+-- <BRIEF EXPLANATION FOR EQUIVALENCE>
+-- EF phi | EF psi states that there exists a future state which phi holds or there exists a future state which psi holds.
+-- This means that there exists a future which at least one of the phi or psi holds. Which means there exist a future which phi or psi holds
+-- Which is EF (phi | psi)
+
+----------------------------------------------------------------------------
+-- Part (c)
+----------------------------------------------------------------------------
+-- Formulas equivalent? No
+
+MODULE model_c
+-- <MODEL AND QUERIES SHOWING INEQUIVALENCE>
+VAR
+  state : {1, 2, 3};
+
+ASSIGN
+  init(state) := 1;
+  next(state) := case
+    (state = 1) : {2, 3};
+    (state = 2) : {2};
+    (state = 3) : {3};
+  esac;
+
+DEFINE
+  c_y := case
+    (state = 1) : 1;
+    (state = 2) : 2;
+    (state = 3) : 3;
+  esac;
+
+CTLSPEC (AF c_y = 2) | (AF c_y = 3);
+CTLSPEC AF (c_y = 2 | c_y = 3);
+
+----------------------------------------------------------------------------
+-- Part (d)
+----------------------------------------------------------------------------
+-- Formulas equivalent? Yes/No
+-- <BRIEF EXPLANATION FOR EQUIVALENCE>
+-- AF !phi means in all paths there exists a future state which phi not holds. This means there is no path which phi holds for it
+-- globally. which the CTL formula for it is !EG phi. So this two CTL formula are equivalent.
+
+----------------------------------------------------------------------------
+-- Part (e)
+----------------------------------------------------------------------------
+-- Formulas equivalent? No
+
+MODULE model_e
+-- <MODEL AND QUERIES SHOWING INEQUIVALENCE>
+VAR
+  state : {1, 2, 3};
+
+ASSIGN
+  init(state) := 1;
+  next(state) := case
+    (state = 1) : {2};
+    (state = 2) : {3};
+    (state = 3) : {3};
+  esac;
+
+DEFINE
+  e_y := (state = 2);
+
+CTLSPEC EF !e_y;
+CTLSPEC !AF e_y;
+
+----------------------------------------------------------------------------
+-- Part (f)
+----------------------------------------------------------------------------
+-- Formulas equivalent? No
+MODULE model_f
+-- <MODEL AND QUERIES SHOWING INEQUIVALENCE>
+VAR
+  state : {1, 2, 3, 4, 5, 6};
+
+ASSIGN
+  init(state) := 1;
+  next(state) := case
+    (state = 1) : {2};
+    (state = 2) : {3, 5};
+    (state = 3) : {4};
+    (state = 4) : {4};
+    (state = 5) : {6};
+    (state = 6) : {6};
+  esac;
+
+DEFINE
+  f_y1 := (state = 1) | (state = 2);
+  f_y2 := (state = 4) | (state = 5);
+  f_y3 := (state = 3) | (state = 6);
+
+CTLSPEC A[f_y1 U A[f_y2 U f_y3]];
+CTLSPEC A[A[f_y1 U f_y2] U f_y3];
+----------------------------------------------------------------------------
+-- Part (g)
+----------------------------------------------------------------------------
+-- Formulas equivalent? Yes
+-- <BRIEF EXPLANATION FOR EQUIVALENCE>
+-- AG phi means phi holds for all states in all paths. EG phi mean that there exists a path which for all states phi holds.
+-- clearly AG phi -> EG phi is always true becuase if phi holds for all states in all paths, it means there exists a path which
+-- phi holds for all states in it.
+
+----------------------------------------------------------------------------
+-- Part (h)
+----------------------------------------------------------------------------
+-- Formulas equivalent? No
+MODULE model_h
+-- <MODEL AND QUERIES SHOWING INEQUIVALENCE>
+VAR
+  state : {1, 2, 3};
+
+ASSIGN
+  init(state) := 1;
+  next(state) := case
+    (state = 1) : {2, 3};
+    (state = 2) : {2};
+    (state = 3) : {3};
+  esac;
+
+DEFINE
+  h_y := (state = 1) | (state = 3);
+
+CTLSPEC TRUE;
+CTLSPEC EG h_y -> AG h_y;
